@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>图文检索系统</title>
+    <link rel="stylesheet" href="../static/bootstrap-3.4.1-dist/css/bootstrap.min.css">
+    <link href="../static/bootstrap-fileinput-5.5.2/css/fileinput.css" media="all" rel="stylesheet" type="text/css"/>
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.15.4/css/all.css" crossorigin="anonymous">
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.5.0/font/bootstrap-icons.min.css" crossorigin="anonymous">
+
+    <link href="../static/bootstrap-fileinput-5.5.2/themes/explorer-fa5" media="all" rel="stylesheet" type="text/css"/>
+        <script src="https://cdn.bootcdn.net/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+     <script type="application/javascript" src="../static/bootstrap-fileinput-5.5.2/js/fileinput.js"></script>
+    <script type="text/javascript"
+            src="../static/bootstrap-fileinput-5.5.2/js/locales/zh.js"></script>
+
+
+
+</head>
+<body>
+<div class="container">
+    <h1 style="text-align: center;margin-top: 3%">图文检索系统</h1>
+    <div class="btn-group" role="group" aria-label="...">
+        <button type="button" class="btn btn-default" onclick="showTextToImage()">以文搜图</button>
+        <button type="button" class="btn btn-default" onclick="showImageToImage()">以图搜图</button>
+
+    </div>
+    <div id="textToImage" style="display: none;">
+        <div class="input-group" >
+            <div style="display: flex" id="search-head">
+                  <input id="textInput" type="text" class="form-control" placeholder="请输入文字描述" style="width: 800px;margin-left: 60px" >
+
+        <button class="btn btn-default" type="button" onclick="searchText()">检索</button>
+            </div>
+             <span style="margin-left: 50%">返回检索图片数量</span>
+               <span id="show"></span>
+
+            <input id="imgCount" type = "range" name = "salary" max = "10" min = "1" step="1" onchange="document.getElementById('show').innerHTML=value" style="margin-left: 70px;width: 90%">
+    </div><!-- /input-group -->
+        <div id="img-box">
+                <ul id="ul"></ul>
+<!--                <p class="image-caption" id="caption"></p>-->
+        </div>
+    </div>
+
+
+
+
+
+    <div id="imageToImage" style="display: none;">
+        <!-- 内容以图搜图的页面 -->
+        <div class="row">
+            <div style="width: 800px;margin-left: 180px">
+    <input type="file" name="file" id="file" multiple class="file"  />
+                <span>选择返回图片数量</span>
+                               <span id="show-1"></span>
+<input id="imgCount-1" type = "range" name = "salary" max = "10" min = "1" step="1" onchange="document.getElementById('show-1').innerHTML=value" style="margin-left: 70px;width: 90%">
+                <p class="image-caption" id="caption1"></p>
+
+                </div><!-- /input-group -->
+        <div id="img-box-1">
+                <ul id="ul-1"></ul>
+<!--                <p class="image-caption" id="caption"></p>-->
+        </div>
+    </div>
+</div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function updateImages(){
+
+    }
+    function showTextToImage() {
+        document.getElementById('textToImage').style.display = 'block';
+        document.getElementById('imageToImage').style.display = 'none';
+    }
+
+    function showImageToImage() {
+        document.getElementById('textToImage').style.display = 'none';
+        document.getElementById('imageToImage').style.display = 'block';
+    }
+
+function searchText() {
+    var inputText = document.getElementById('textInput').value;
+    var imgCount = document.getElementById('imgCount').value;
+
+    // 构建请求体
+    var requestBody = {
+        textInput: inputText,
+        imgCount:imgCount
+    };
+
+    // 发送数据到后端
+    fetch('textToImage', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json;charset=UTF-8'
+        },
+        body: JSON.stringify(requestBody)
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
+    .then(data => {
+        // 处理后端返回的数据
+        console.log(data)
+        data=data[0]
+        var html=""
+        for(var i=0;i<data.length;i++){
+            console.log(data[i])
+            html+="<li> <img src=data:image/jpeg;base64,"+data[i].base64+">匹配率:"+data[i].matchRate+"</p></li>"
+        }
+        document.getElementById('ul').innerHTML=html
+
+    })
+    .catch(error => {
+        console.error('There was a problem with the fetch operation:', error);
+    });
+
+    $("#uploadFile").file({
+            title: "请上传附件",
+            fileinput: {
+                maxFileSize: 10240,
+                maxFileCount:3
+            },
+            fileIdContainer:"[name='fileIds']",
+            showContainer:'#attachment',
+            //显示文件类型 edit=可编辑  detail=明细 默认为明细
+            showType:'edit',
+            //弹出窗口 执行上传附件后的回调函数(window:false不调用此方法)
+            window:true,
+            callback:function(fileIds,oldfileIds){
+                //更新fileIds
+                this.showFiles({
+                    fileIds:fileIds
+                });
+            }
+        });
+}
+</script>
+<script type="text/javascript">
+    $('#file').fileinput({
+        language: 'zh',     //设置语言
+        dropZoneEnabled: true,      //是否显示拖拽区域
+        dropZoneTitle: "可以将图片拖放到这里",    //拖拽区域显示文字
+        uploadUrl: 'imageToImage',  //上传路径
+        allowedFileExtensions: ['jpg', 'png', 'gif', 'jpeg'],   //指定上传文件类型
+        maxFileSize: 0,
+        maxFileSize: 2048,   //上传文件最大值，单位kb
+        uploadAsync: true,  //异步上传
+        maxFileCount: 2 , //上传文件最大个数。
+          uploadExtraData: function() {
+        var extraData = {
+            // 添加额外的上传参数
+            imgCount: document.getElementById('imgCount-1').value
+        };
+        return extraData;
+    }
+    }).on("fileuploaded", function(event,data) { //异步上传成功后回调
+        console.log(data);		//data为返回的数据
+        data=data.response[0]
+        var html=""
+        for(var i=0;i<data.length;i++){
+            console.log(data[i])
+            html+="<li> <img src=data:image/jpeg;base64,"+data[i].base64+">匹配率:"+data[i].matchRate+"</p></li>"
+        }
+        document.getElementById('ul-1').innerHTML=html
+    });
+</script>
+
+</body>
+<style>
+    .btn-group{
+        margin-left: 43%;
+    }
+    .input-group{
+        margin-top: 5%;
+    }
+    #img-box{
+        margin-top: 20px;
+    }
+    /* 设置统一的宽度和高度 */
+li {
+  width: 30%; /* 一行三列，每列占据 30% 的宽度 */
+  box-sizing: border-box; /* 让 padding 和 border 不会影响元素的实际宽度 */
+  float: left; /* 将元素浮动到左侧 */
+  margin: 10px; /* 设置列之间的间距 */
+}
+
+img {
+  width: 100%; /* 图片宽度占满父元素（<li>）的100% */
+  height: 180px; /* 保持图片宽高比例 */
+  display: block; /* 避免底部留白 */
+}
+
+
+</style>
+</html>
